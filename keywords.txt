@@ -1,0 +1,20 @@
+# Syntax Coloring Map for MotorController Library
+
+# Datatypes (KEYWORD1)
+MotorController	KEYWORD1
+MotorControl	KEYWORD1
+Mode	KEYWORD1
+
+# Methods and Functions (KEYWORD2)
+begin	KEYWORD2
+motorGo	KEYWORD2
+setMode	KEYWORD2
+softStop	KEYWORD2
+hardStop	KEYWORD2
+setFaultDetection	KEYWORD2
+
+# Constants (LITERAL1)
+FORWARD	LITERAL1
+BACKWARD	LITERAL1
+SOFT_STOP	LITERAL1
+HARD_STOP	LITERAL1

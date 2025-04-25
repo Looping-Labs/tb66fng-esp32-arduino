@@ -6,7 +6,7 @@
  * peripheral for PWM generation, designed specifically for the TB6612FNG
  * motor driver.
  *
- * @author Your Name
+ * @author json-dev
  * @date April 2025
  */
 
