@@ -4,7 +4,7 @@
  *
  * This library provides motor control capabilities using ESP32's LEDC
  * peripheral for PWM generation, designed specifically for the TB6612FNG
- * motor driver.
+ * motor driver. Updated for Arduino ESP32 3.0+ compatibility.
  *
  * @author json-dev
  * @date April 2025
@@ -23,7 +23,7 @@ namespace MotorControl {
    *
    * This class provides a simple interface for controlling DC motors
    * using the TB6612FNG motor driver with ESP32's LEDC peripheral
-   * for PWM generation.
+   * for PWM generation. Compatible with Arduino ESP32 3.0+.
    */
   class MotorController {
   public:
@@ -44,15 +44,11 @@ namespace MotorControl {
      * @param in2_pin Direction control pin 2
      * @param pwm_pin PWM speed control pin
      * @param fault_pin Optional GPIO for fault detection (set to -1 if not used)
-     * @param ledc_channel LEDC channel to use (0-7 on ESP32)
-     * @param ledc_timer LEDC timer to use (0-3 on ESP32)
      */
     MotorController(int in1_pin,
                     int in2_pin,
                     int pwm_pin,
-                    int fault_pin = -1,
-                    uint8_t ledc_channel = 0,
-                    uint8_t ledc_timer = 0);
+                    int fault_pin = -1);
 
     /**
      * @brief Initialize the motor controller
@@ -103,6 +99,11 @@ namespace MotorControl {
      */
     bool setFaultDetection(void (*callback)(void));
 
+    /**
+     * @brief Clean up resources and detach LEDC
+     */
+    void end();
+
   private:
     // GPIO pins
     int in1_pin_;
@@ -110,9 +111,7 @@ namespace MotorControl {
     int pwm_pin_;
     int fault_pin_;
 
-    // LEDC configuration
-    uint8_t ledc_channel_;
-    uint8_t ledc_timer_;
+    // PWM configuration
     uint8_t resolution_bits_;
     uint32_t max_duty_value_;
 

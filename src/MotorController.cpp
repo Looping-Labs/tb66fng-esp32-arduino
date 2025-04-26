@@ -4,6 +4,7 @@
  */
 
 #include "MotorController.h"
+#include "driver/ledc.h"
 
 namespace MotorControl {
 
@@ -17,18 +18,12 @@ namespace MotorControl {
   MotorController::MotorController(int in1_pin,
                                    int in2_pin,
                                    int pwm_pin,
-                                   int fault_pin,
-                                   uint8_t ledc_channel,
-                                   uint8_t ledc_timer) {
+                                   int fault_pin) {
     // Store pins
     in1_pin_ = in1_pin;
     in2_pin_ = in2_pin;
     pwm_pin_ = pwm_pin;
     fault_pin_ = fault_pin;
-
-    // Store LEDC configuration
-    ledc_channel_ = ledc_channel;
-    ledc_timer_ = ledc_timer;
   }
 
   bool MotorController::begin(uint32_t freq_hz, uint8_t resolution_bits) {
@@ -49,13 +44,18 @@ namespace MotorControl {
     digitalWrite(in1_pin_, LOW);
     digitalWrite(in2_pin_, LOW);
 
-    // Configure LEDC for PWM
-    ledcSetup(ledc_channel_, freq_hz, resolution_bits_);
-    ledcAttachPin(pwm_pin_, ledc_channel_);
-    ledcWrite(ledc_channel_, 0); // Start with 0 duty cycle
+    // Configure LEDC for PWM using the new ledcAttach API
+    // This replaces the previous ledcSetup and ledcAttachPin calls
+    if (ledcAttach(pwm_pin_, freq_hz, resolution_bits_) == ESP_OK) {
+      // Start with 0 duty cycle
+      ledcWrite(pwm_pin_, 0);
 
-    Serial.printf("Motor PWM configured on channel %d with %d bits resolution and %u Hz frequency\n",
-                  ledc_channel_, resolution_bits_, freq_hz);
+      Serial.printf("Motor PWM configured on pin %d with %d bits resolution and %u Hz frequency\n",
+                    pwm_pin_, resolution_bits_, freq_hz);
+    } else {
+      Serial.printf("Failed to attach LEDC to PWM pin %d\n", pwm_pin_);
+      return false;
+    }
 
     // Configure fault detection if pin specified
     if (fault_pin_ >= 0) {
@@ -141,8 +141,8 @@ namespace MotorControl {
       return false;
     }
 
-    // Set PWM duty cycle
-    ledcWrite(ledc_channel_, current_duty_);
+    // Set PWM duty cycle - now using pin instead of channel
+    ledcWrite(pwm_pin_, current_duty_);
 
     return true;
   }
@@ -153,6 +153,22 @@ namespace MotorControl {
 
   bool MotorController::hardStop() {
     return setMode(Mode::HARD_STOP, 0);
+  }
+
+  void MotorController::end() {
+    // Use the updated ledcDetach API (replacement for ledcDetachPin)
+    ledcDetach(pwm_pin_);
+
+    // Reset pins to input to avoid any unwanted signals
+    pinMode(in1_pin_, INPUT);
+    pinMode(in2_pin_, INPUT);
+    pinMode(pwm_pin_, INPUT);
+
+    // Detach interrupt if fault pin was configured
+    if (fault_pin_ >= 0) {
+      detachInterrupt(digitalPinToInterrupt(fault_pin_));
+      pinMode(fault_pin_, INPUT);
+    }
   }
 
 } // namespace MotorControl
