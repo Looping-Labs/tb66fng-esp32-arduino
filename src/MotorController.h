@@ -38,23 +38,44 @@ namespace MotorControl {
     };
 
     /**
-     * @brief Constructor for Motor Controller
+     * @brief Constructor for Motor Controller (without standby pin)
      *
      * @param in1_pin Direction control pin 1
      * @param in2_pin Direction control pin 2
      * @param pwm_pin PWM speed control pin
      * @param fault_pin Optional GPIO for fault detection (set to -1 if not used)
+     * @param ledc_channel LEDC channel to use (0-15 on ESP32)
      */
-    MotorController(int in1_pin,
-                    int in2_pin,
-                    int pwm_pin,
-                    int fault_pin = -1);
+    MotorController(uint8_t in1_pin, uint8_t in2_pin, uint8_t pwm_pin, uint8_t ledc_channel, uint8_t fault_pin);
+
+    /**
+     * @brief Constructor for Motor Controller (without standby pin)
+     *
+     * @param in1_pin Direction control pin 1
+     * @param in2_pin Direction control pin 2
+     * @param pwm_pin PWM speed control pin
+     * @param fault_pin Optional GPIO for fault detection (set to -1 if not used)
+     * @param ledc_channel LEDC channel to use (0-15 on ESP32)
+     */
+    MotorController(uint8_t in1_pin, uint8_t in2_pin, uint8_t pwm_pin, uint8_t ledc_channel);
+
+    /**
+     * @brief Constructor for Motor Controller (with standby pin)
+     *
+     * @param in1_pin Direction control pin 1
+     * @param in2_pin Direction control pin 2
+     * @param pwm_pin PWM speed control pin
+     * @param standby_pin Standby control pin
+     * @param fault_pin Optional GPIO for fault detection (set to -1 if not used)
+     * @param ledc_channel LEDC channel to use (0-15 on ESP32)
+     */
+    MotorController(uint8_t in1_pin, uint8_t in2_pin, uint8_t pwm_pin, uint8_t standby_pin, uint8_t ledc_channel, uint8_t fault_pin);
 
     /**
      * @brief Initialize the motor controller
      *
      * @param freq_hz PWM frequency in Hz (default 10kHz)
-     * @param resolution_bits PWM resolution in bits (8-14, default 10)
+     * @param resolution_bits PWM resolution in bits (1-20 for ESP32, default 10)
      * @return bool true on success, false on failure
      */
     bool begin(uint32_t freq_hz = 10000, uint8_t resolution_bits = 10);
@@ -62,7 +83,7 @@ namespace MotorControl {
     /**
      * @brief Start motor rotation with specified speed and direction
      *
-     * @param speed Speed value from -1023 to 1023, sign determines direction
+     * @param speed Speed value from -max to max, sign determines direction
      * @return bool true on success, false on failure
      *
      * @note Actual speed range depends on the resolution set in begin().
@@ -100,38 +121,60 @@ namespace MotorControl {
     bool setFaultDetection(void (*callback)(void));
 
     /**
+     * @brief Enable motor driver by setting standby pin HIGH
+     * @return bool true on success, false if standby pin not configured
+     */
+    bool enable();
+
+    /**
+     * @brief Disable motor driver by setting standby pin LOW
+     * @return bool true on success, false if standby pin not configured
+     */
+    bool disable();
+
+    /**
+     * @brief Check if standby pin is configured
+     * @return bool true if standby pin is configured, false otherwise
+     */
+    bool hasStandbyPin() const { return standby_pin >= 0; }
+
+    /**
+     * @brief Get the currently assigned LEDC channel
+     * @return uint8_t The LEDC channel number
+     */
+    uint8_t getLedcChannel() const { return ledc_channel; }
+
+    /**
      * @brief Clean up resources and detach LEDC
      */
     void end();
 
   private:
     // GPIO pins
-    int in1_pin_;
-    int in2_pin_;
-    int pwm_pin_;
-    int fault_pin_;
+    uint8_t in1_pin;
+    uint8_t in2_pin;
+    uint8_t pwm_pin;
+    uint8_t standby_pin;
+    uint8_t fault_pin;
 
-    // PWM configuration
-    uint8_t resolution_bits_;
-    uint32_t max_duty_value_;
+    // LEDC configuration
+    uint8_t  ledc_channel; 
+    uint8_t  resolution_bits;
+    uint32_t max_duty_value;
 
     // Current operating state
-    Mode current_mode_ = Mode::SOFT_STOP;
-    uint16_t current_duty_ = 0;
+    Mode current_mode = Mode::SOFT_STOP;
+    uint16_t current_duty = 0;
 
     // Configure direction pins
     bool setDirection(Mode mode);
 
-    // Static fault ISR handler reference
-    static void (*fault_callback_)(void);
+    // Static fault callback pointer
+    static void (*fault_callback)(void);
 
     // Static ISR handler
     static void IRAM_ATTR handleFaultISR();
   };
-
-  // Static member initialization
-  void (*MotorController::fault_callback_)(void) = nullptr;
-
 } // namespace MotorControl
 
 #endif // MOTOR_CONTROLLER_H

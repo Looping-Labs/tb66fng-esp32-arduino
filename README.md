@@ -35,13 +35,14 @@ using namespace MotorControl;
 const int MOTOR_IN1 = 5;
 const int MOTOR_IN2 = 6;
 const int MOTOR_PWM = 7;
+const int CHANNEL   = 0;
 
 // Create motor controller instance
-MotorController motor(MOTOR_IN1, MOTOR_IN2, MOTOR_PWM);
+MotorController motor(MOTOR_IN1, MOTOR_IN2, MOTOR_PWM, CHANNEL);
 
 void setup() {
-  // Initialize with 20kHz PWM frequency and 10-bit resolution
-  motor.begin(20000, 10);
+  // Initialize with 10kHz PWM frequency and 10-bit resolution
+  motor.begin(10000, 10);
 }
 
 void loop() {
